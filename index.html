@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Simon Says</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,700" rel="stylesheet">
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Roboto Mono', monospace;
+      color: white;
+      margin: 0;
+      background: linear-gradient(135deg, #B4DCE7, #9B5DE5);
+      background-size: 400% 400%;
+      animation: gradientAnimation 10s ease infinite;
+    }
+
+    #level-title {
+      font-size: 3rem;
+      margin-top: 30px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: calc(100vh - 30px);
+    }
+
+    .row {
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn {
+      margin: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 150px;
+      width: 150px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #green {
+      background-color: #40C9A2;
+    }
+
+    #red {
+      background-color: #FF4837;
+    }
+
+    #blue {
+      background-color: #2B9EB3;
+    }
+
+    #yellow {
+      background-color: #FFBD69;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    .score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 1.2rem;
+    }
+
+    .score-increase {
+      font-size: 1rem;
+      margin-top: 10px;
+      opacity: 0;
+      animation: fadeOut 1s ease forwards;
+    }
+
+    #instructions {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .personal-best {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      font-size: 1.2rem;
+      color: white;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .overlay-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      background-image: url('https://img.freepik.com/free-photo/natural-wooden-background_24837-269.jpg?size=626&ext=jpg');
+      border: 2px solid white;
+    }
+
+    @keyframes gradientAnimation {
+      0% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    @keyframes fadeOut {
+      0% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+
+    /* New styles for YouTube icon */
+    .youtube-icon {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      width: 50px;
+      height: 50px;
+      background-image: url('https://www.gstatic.com/youtube/img/branding/youtubelogo/svg/youtubelogo.svg');
+      background-size: 50px 50px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .youtube-icon:hover {
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Added YouTube icon -->
+  <a href="https://www.youtube.com/@nxrflms/featured" target="_blank" class="youtube-icon"></a>
+
+  <div class="container">
+    <h1 id="level-title">Press Enter to Start</h1>
+    <div class="row">
+      <div type="button" id="green" class="btn"></div>
+      <div type="button" id="red" class="btn"></div>
+    </div>
+    <div class="row">
+      <div type="button" id="yellow" class="btn"></div>
+      <div type="button" id="blue" class="btn"></div>
+    </div>
+  </div>
+
+  <div class="score">Score: <span id="score">0</span></div>
+  <div class="personal-best">Personal Best: <span id="personal-best">0</span></div> <!-- Updated personal best display -->
+  <div id="instructions">Instructions</div>
+
+  <div class="overlay">
+    <div class="overlay-content">
+      <h2 style="color: black;">Instructions</h2>
+      <p style="color: black;">Here are the instructions for the game:</p>
+      <p style="color: black;">- The game will start when you press the Enter key.</p>
+      <p style="color: black;">- The pattern will be shown by lighting up the circles in a specific order.</p>
+      <p style="color: black;">- You need to repeat the pattern by clicking the circles in the same order.</p>
+      <p style="color: black;">- Each successful level completion will increase the difficulty.</p>
+      <p style="color: black;">- If you make a mistake, the game will be over.</p>
+      <p style="color: black;">- Try to achieve the highest score possible!</p>
+      <button onclick="closeInstructions()">Close</button>
+    </div>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script>
+    var buttonColours = ["red", "blue", "green", "yellow"];
+    var gamePattern = [];
+    var userClickedPattern = [];
+    var started = false;
+    var level = 0;
+    var score = 0;
+    var personalBest = 0;
+
+    $(document).ready(function() {
+      personalBest = localStorage.getItem("personalBest") || 0;
+      updatePersonalBest();
+    });
+
+    $(document).keypress(function(event) {
+      if (event.which === 13 && !started) {
+        $("#level-title").text("Level " + level);
+        nextSequence();
+        started = true;
+      }
+    });
+
+    $(".btn").click(function() {
+      var userChosenColour = $(this).attr("id");
+      userClickedPattern.push(userChosenColour);
+      playSound(userChosenColour);
+      animatePress(userChosenColour);
+      checkAnswer(userClickedPattern.length - 1);
+    });
+
+    $("#instructions").click(function() {
+      $(".overlay").addClass("active");
+    });
+
+    function closeInstructions() {
+      $(".overlay").removeClass("active");
+    }
+
+    function checkAnswer(currentLevel) {
+      if (gamePattern[currentLevel] === userClickedPattern[currentLevel]) {
+        if (userClickedPattern.length === gamePattern.length) {
+          setTimeout(function() {
+            score += 10;
+            $("#score").text(score);
+            showScoreIncrease();
+            nextSequence();
+          }, 1000);
+        }
+      } else {
+        playSound("wrong");
+        $("body").addClass("game-over");
+        setTimeout(function() {
+          $("body").removeClass("game-over");
+        }, 200);
+        $("#level-title").text("Game Over, Press Enter to Restart");
+        if (score > personalBest) {
+          personalBest = score;
+          localStorage.setItem("personalBest", personalBest);
+          updatePersonalBest();
+        }
+        startOver();
+      }
+    }
+
+    function nextSequence() {
+      userClickedPattern = [];
+      level++;
+      $("#level-title").text("Level " + level);
+      var randomNumber = Math.floor(Math.random() * 4);
+      var randomChosenColour = buttonColours[randomNumber];
+      gamePattern.push(randomChosenColour);
+      $("#" + randomChosenColour).fadeOut(100).fadeIn(100).fadeOut(100).fadeIn(100);
+      playSound(randomChosenColour);
+    }
+
+    function playSound(name) {
+      var audio = new Audio("sounds/" + name + ".mp3");
+      audio.play();
+    }
+
+    function animatePress(currentColour) {
+      $("#" + currentColour).addClass("pressed");
+      setTimeout(function() {
+        $("#" + currentColour).removeClass("pressed");
+      }, 100);
+    }
+
+    function startOver() {
+      level = 0;
+      score = 0;
+      gamePattern = [];
+      started = false;
+      updatePersonalBest();
+    }
+
+    function showScoreIncrease() {
+      $(".score-increase").text("+10");
+      $(".score-increase").css("opacity", "1");
+      $(".score-increase").animate({
+        opacity: 0,
+        marginTop: "-=10px"
+      }, 800);
+    }
+
+    function updatePersonalBest() {
+      $("#personal-best").text(personalBest);
+    }
+  </script>
+</body>
+
+</html>
